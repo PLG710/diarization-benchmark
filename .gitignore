@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+results/
+data/audio/*
+*.log
+.env

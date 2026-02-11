@@ -1,0 +1,9 @@
+jupyter
+ipykernel
+python-dotenv
+requests
+tqdm
+pandas 
+numpy
+soundfile
+faster-whisper
