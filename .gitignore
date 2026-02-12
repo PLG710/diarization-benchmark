@@ -3,5 +3,6 @@ __pycache__/
 .ipynb_checkpoints/
 results/
 data/audio/*
+data/test_audio/*
 *.log
 .env
