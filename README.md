@@ -25,20 +25,20 @@ Reicht eine kontextbasierte LLM-Diarisierung auf Transkripten für die meisten A
 
 Das zentrale Notebook ist `01_pipeline.ipynb`. Es führt pro Audiodatei zwei Pipelines aus:
 
-### Pipeline A: ASR → LLM (textbasiert)
+### Pipeline A: Transkription → LLM (textbasiert)
 - Audio-Normalisierung auf **WAV, 16 kHz, mono** für Vergleichbarkeit mit Pyannote
 - Transkription via **faster-whisper** (lokal verfügbares Tool zur Transkription von Audio-Input)
 - LLM (lokal gehostet über vLLM) erzeugt über individuell konfigurierbare Prompt ein diarisiertes Format
 
-### Pipeline B: ASR → Pyannote → Post-Processing (audiobasiert)
+### Pipeline B: Transkription → Pyannote → Post-Processing (audiobasiert)
 - Audio-Normalisierung auf **WAV, 16 kHz, mono** (bestes Verarbeitungsformat für Pyannote)
 - **Pyannote** erzeugt Speaker-Turns (wer spricht wann)
 - Post-Processing: Mapping und nicht-rechenintensive Formatierungen zur Erzeugung einer menschenlesbaren Ausgabe
 
 In beiden Pipelines entsteht zur Vergleichbarkeit folgender Text-Output:
 
-[Sprecher 1]: Inhalt
-[Sprecher 2]: Inhalt
+`[Sprecher 1]: Inhalt`<br>
+`[Sprecher 2]: Inhalt`
 
 ---
 
