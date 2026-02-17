@@ -14,7 +14,7 @@ Dieses Repository stellt eine reproduzierbare Benchmark-Pipeline bereit, um zwei
 - **Text-/Kontext-basierte Diarisierung (LLM):** Ein lokal gehostetes LLM über vLLM erhält ein Transkript und soll Sprecherwechsel und Sprechersegmente rein aus dem textuellen Kontext ableiten.
 - **Audio-basierte Diarisierung (Pyannote):** Pyannote nutzt akkustische Merkmale und liefert anhand des Audios Speaker-Turns, über welche sich mit etwas Post-Processing Segmente und gesagte Worte verschiedenen Sprechern zuordnen lassen.
 
-Beide Varianten erfüllen das Kriterium der **lokalen Datenverarbeitung**. Im Notebook sind Code-Ansätze zur Integration beider Methoden in ein eigenes lokales Setup aufgeführt. Es ist so konfiguriert, dass beliebige LLMs mit beliebigen Pyannote-Versionen verglichen und daraus Daten erzeugt werden können.
+Beide Varianten erfüllen das Kriterium der **lokalen Datenverarbeitung**. Im Notebook sind Code-Ansätze zur Integration beider Methoden in ein eigenes lokales Setup aufgeführt. Es ist so konfiguriert, dass beliebige LLMs mit beliebigen Pyannote-Versionen verglichen und daraus Daten erzeugt werden können. Für die Erzeugung des Transkripts und der benötigten Segmente für Pyannote wird **faster-whisper** verwendet, ein Tool, welches lokal Audio-Dateien transkribiert.
 
 **Zentrale Fragestellung:**  
 Reicht eine kontextbasierte LLM-Diarisierung auf Transkripten für die meisten Anwendungsfälle aus oder liefern audio-basierte Methoden (z.B. Pyannote)per se robustere Sprecherzuordnung - wo liegen die Grenzen und Stärken beider Ansätze? 
