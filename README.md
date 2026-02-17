@@ -1,4 +1,4 @@
-# Diarization Benchmark: LLM-basierte vs. audio-basierte Sprecherdiarisierung (WhisKI)
+# Diarization Benchmark: LLM-basierte vs. audio-basierte Sprecherdiarisierung
 
 ## Kontext und Motivation
 
