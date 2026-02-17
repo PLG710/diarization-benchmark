@@ -98,7 +98,7 @@ touch .env
 
 ## .env Konfiguration
 
-Beispiel (bitte die individuelle Konfiguration anpassen):
+Notwendige Variablen mit Beispielen (bitte die individuelle Konfiguration anpassen):
 
 ```bash
 # vLLM / LLM
