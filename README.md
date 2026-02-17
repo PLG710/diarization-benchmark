@@ -11,3 +11,5 @@ REPO_ROOT=## (Hauptpfad des Repositories, z.B. "~/jupyter/diarization-benchmark"
 TEST_FILE=## (Pfad angeben relativ zur REPO-ROOT, z.B: "/data/test/test2.mp3")
 PYANNOTE_MODEL_ID=## (z.B. "pyannote/speaker-diarization-community-1")
 HUGGINGFACE_TOKEN=## (Hugging-Face-Token anlegen unter https://huggingface.co/pyannote/speaker-diarization-community-1)
+
+Verwendete Audio-Dateien müssen unterschiedliche Namen haben.
