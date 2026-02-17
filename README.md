@@ -5,7 +5,7 @@
 In vielen Anwendungsfällen (z.B. Medizin, Verwaltung, Forschung, Industrie) ist eine Verarbeitung von Audio- und Textdaten **lokal** notwendig, um Datenschutz-, Compliance- oder Governance-Anforderungen zu erfüllen. Für die Nachnutzung von Gesprächen (z.B. Dokumentation, Qualitätsmanagement, Forschungsauswertung) sind dabei zwei Bausteine besonders relevant:
 
 1) **Lokale Transkription**: *Was wurde gesagt?*  
-2) **Sprecherdiarisierung**: *Wer hat wann gesprochen?*
+2) **Sprecherdiarisierung**: *Wer hat gesprochen?*
 
 Eine Sprecherzuordnung erleichtert u.a. die Nachvollziehbarkeit, die Verständlichkeit sowie die spätere Auswertung von Gesprächen, Meetings oder ähnlichem.
 
