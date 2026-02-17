@@ -1,4 +1,4 @@
-# Diarization Benchmark: LLM-basierte vs. audio-basierte Sprecherdiarisierung
+# Diarization Benchmark: LLM-basierte vs. audio-basierte Sprecherdiarisierung in lokalem Setting
 
 ## Kontext und Motivation
 
