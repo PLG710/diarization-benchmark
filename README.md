@@ -61,7 +61,7 @@ Die folgende Struktur wird vom Notebook erwartet/verwendet:
 ## Voraussetzungen
 
 - **Python 3.10+**
-- **ffmpeg** (für Audio-Normalisierung)
+- **ffmpeg** (für Audio-Normalisierung, Windows: 7.x, Linux: 8.x)
 - **Hugging Face Token** für Pyannote-Modelle (Model Terms auf Hugging Face akzeptieren und eigenen Token erstellen):
 https://huggingface.co/pyannote/speaker-diarization-community-1
 - Ein laufender **vLLM**-Server zur Nutzung der LLM-Pipeline genutzt werden soll
@@ -69,7 +69,7 @@ https://huggingface.co/pyannote/speaker-diarization-community-1
 ### ffmpeg installieren (Beispiele)
 - Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y ffmpeg`
 - macOS (brew): `brew install ffmpeg`
-
+- Windows `Download ffmepg-7.1.1-full-build-shared from https://www.gyan.dev/ffmpeg/builds/#release-builds`
 ---
 
 ## Setup (Quickstart)
