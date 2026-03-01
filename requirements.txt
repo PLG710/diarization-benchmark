@@ -3,9 +3,8 @@ ipykernel
 python-dotenv
 requests
 tqdm
-pandas 
-numpy
+pandas
 soundfile
 faster-whisper
-torch
 pyannote-audio
+whisperx

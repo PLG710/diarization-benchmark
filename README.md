@@ -76,10 +76,12 @@ https://huggingface.co/pyannote/speaker-diarization-community-1
 
 1) Virtuelle Umgebung + Dependencies
 
+Constraints-Datei je nach Setup wählen (Windows CPU, Linux CPU, Linux CUDA)
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -c constraints_linux.txt -r requirements.txt
 ```
 
 2) Ordner anlegen
