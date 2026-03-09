@@ -5,6 +5,7 @@ requests
 tqdm
 pandas
 soundfile
+seaborn
 faster-whisper
 pyannote-audio
 whisperx
