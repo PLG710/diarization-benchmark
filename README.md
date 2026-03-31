@@ -1,96 +1,136 @@
-# Diarization Benchmark: LLM-basierte vs. audio-basierte Sprecherdiarisierung in lokalem Setting
+# Local Speaker Attribution in German Medical Conversations: Comparing LLM Pipelines with Audio-Based Diarization
 
-## Kontext und Motivation
+This archive contains the pipeline and evaluation code accompanying the paper:
 
-In vielen Anwendungsfällen (z.B. Medizin, Verwaltung, Forschung, Industrie) ist eine Verarbeitung von Audio- und Textdaten **lokal** notwendig, um Datenschutz-, Compliance- oder Governance-Anforderungen zu erfüllen. Für die Nachnutzung von Gesprächen (z.B. Dokumentation, Qualitätsmanagement, Forschungsauswertung) sind dabei zwei Bausteine besonders relevant:
+> **Local Speaker Attribution in German Medical Conversations: Comparing LLM Pipelines with Audio-Based Diarization**  
+> Liegel P, Christoph J, Demus C, Wattar A, Jäger C (2026)
 
-1) **Lokale Transkription**: *Was wurde gesagt?*  
-2) **Sprecherdiarisierung**: *Wer hat gesprochen?*
-
-Eine Sprecherzuordnung erleichtert u.a. die Nachvollziehbarkeit, die Verständlichkeit sowie die spätere Auswertung von Gesprächen, Meetings oder ähnlichem.
-
-Dieses Repository stellt eine reproduzierbare Benchmark-Pipeline bereit, um zwei Ansätze zur Sprecherzuordnung zu vergleichen:
-
-- **Text-/Kontext-basierte Diarisierung (LLM):** Ein lokal gehostetes LLM über vLLM erhält ein Transkript und soll Sprecherwechsel und Sprechersegmente rein aus dem textuellen Kontext ableiten.
-- **Audio-basierte Diarisierung (Pyannote):** Pyannote nutzt akkustische Merkmale und liefert anhand des Audios Speaker-Turns, über welche sich mit etwas Post-Processing Segmente und gesagte Worte verschiedenen Sprechern zuordnen lassen.
-
-Beide Varianten erfüllen das Kriterium der **lokalen Datenverarbeitung**. Im Notebook sind Code-Ansätze zur Integration beider Methoden in ein eigenes lokales Setup aufgeführt. Es ist so konfiguriert, dass beliebige LLMs mit beliebigen Pyannote-Versionen verglichen und daraus Daten erzeugt werden können. Für die Erzeugung des Transkripts und der benötigten Segmente für Pyannote wird **faster-whisper** verwendet, ein Tool, welches lokal Audio-Dateien transkribiert.
-
-**Zentrale Fragestellung:**  
-Reicht eine kontextbasierte LLM-Diarisierung auf Transkripten für die meisten Anwendungsfälle aus oder liefern audio-basierte Methoden (z.B. Pyannote)per se robustere Sprecherzuordnung - wo liegen die Grenzen und Stärken beider Ansätze? 
+**Note:** This Zenodo archive contains code only. Audio files, generated result folders, manual reference annotations, and other data artifacts are not included. To reproduce the workflow, users must provide their own audio files and, for full quantitative evaluation, their own reference speaker annotations.
 
 ---
 
-## Überblick über die Pipeline
+## Overview and Motivation
 
-Das zentrale Notebook ist `01_pipeline.ipynb`. Es führt pro Audiodatei zwei Pipelines aus:
+In clinical and other privacy-sensitive settings, audio and text data must often be processed locally to comply with data protection requirements (e.g. GDPR). For reusing recorded conversations — such as for documentation, quality management, or research — two components are particularly relevant:
 
-### Pipeline A: Transkription → LLM (textbasiert)
-- Audio-Normalisierung auf **WAV, 16 kHz, mono** für Vergleichbarkeit mit Pyannote
-- Transkription via **faster-whisper** (lokal verfügbares Tool zur Transkription von Audio-Input)
-- LLM (lokal gehostet über vLLM) erzeugt über individuell konfigurierbare Prompt ein diarisiertes Format
+1. **Local transcription**: *What was said?*
+2. **Speaker attribution**: *Who said it?*
 
-### Pipeline B: Transkription → Pyannote → Post-Processing (audiobasiert)
-- Audio-Normalisierung auf **WAV, 16 kHz, mono** (bestes Verarbeitungsformat für Pyannote)
-- **Pyannote** erzeugt Speaker-Turns (wer spricht wann)
-- Post-Processing: Mapping und nicht-rechenintensive Formatierungen zur Erzeugung einer menschenlesbaren Ausgabe
+This repository implements and compares two local approaches to speaker attribution:
 
-In beiden Pipelines entsteht zur Vergleichbarkeit folgender Text-Output:
+- **Transcript-only LLM attribution (Pipeline A):** A locally hosted LLM receives a transcript and infers speaker turns from textual context alone — no audio required.
+- **Audio-guided Pyannote attribution (Pipelines B–D):** Pyannote uses acoustic features to produce speaker turns, which are then mapped onto the ASR transcript via post-processing.
 
-`[Sprecher 1]: Inhalt`<br>
-`[Sprecher 2]: Inhalt`
+A core design decision is the **shared-transcript design**: faster-whisper is run once per file, and all pipelines operate on the same canonical transcript. This isolates speaker attribution quality from ASR variability and enables a fair comparison across methods.
 
 ---
 
-## Repository-Struktur
+## Pipeline Overview
 
-Die folgende Struktur wird vom Notebook erwartet/verwendet:
+### Pipeline A — Transcript-only LLM attribution
 
-    data/
-      input_audio/         # Zu testende Audios, die batch-weise durch beide Pipelines laufen und Metadaten generieren sollen
-      test_audio/          # Audios für Einzeltests können hier abgelegt werden
-      normalised_audio/    # konvertierte Audios im Format WAV 16kHz Mono
-    results/
-      <file_stem>/         # pro Audio ein Ordner: Transcript, Outputs, Meta
-    src/                   # optional (wenn Python-Code später ausgelagert werden soll)
-    01_pipeline.ipynb      # Hauptnotebook
-    02_analyse.ipynb       # optionales Notebook zur Metadaten-Auswertung, Statistik-Erstellung, etc. - Noch nicht implementiert
+Two locally hosted instruction-tuned models, each evaluated in four settings (raw vs. presegmented input × known vs. unknown speaker count):
+
+| Pipeline | Model |
+|----------|-------|
+| A1 | MedGemma-27B-IT |
+| A2 | Llama-3.1-8B-Instruct |
+
+- **Raw input**: ASR transcript with line breaks removed
+- **Presegmented input**: Transcript preserving faster-whisper segment boundaries
+- **Known condition**: Number of speakers specified in the prompt
+- **Unknown condition**: Number of speakers must be inferred from the text
+
+Models are served via vLLM with deterministic decoding (temperature 0.0). Prompts require exact transcript preservation and consecutive speaker labels of the form `[Sprecher N]:`.
+
+### Pipeline B — Segment-level Pyannote mapping
+
+Pyannote community-1 exclusive speaker turns are mapped to faster-whisper ASR segments by maximum temporal overlap.
+
+### Pipeline C — Word-level Viterbi mapping
+
+Pyannote turns are mapped to the word level using native faster-whisper word timestamps and Viterbi smoothing.
+
+### Pipeline D — Word-level mapping with WhisperX alignment (supplementary)
+
+Same as C, but native faster-whisper word timestamps are replaced with WhisperX forced alignment results. Serves as a sensitivity analysis.
+
+All pipelines produce output in the format:
+
+```
+[Sprecher 1]: Inhalt
+[Sprecher 2]: Inhalt
+```
 
 ---
 
-## Voraussetzungen
+## Repository Structure
 
-- **Python 3.10+**
-- **ffmpeg** (für Audio-Normalisierung, Windows: 7.x, Linux: 8.x)
-- **Hugging Face Token** für Pyannote-Modelle (Model Terms auf Hugging Face akzeptieren und eigenen Token erstellen):
-https://huggingface.co/pyannote/speaker-diarization-community-1
-- Ein laufender **vLLM**-Server zur Nutzung der LLM-Pipeline genutzt werden soll
+```
+data/
+  input_audio/          # user-provided audio files for batch processing; not included in this archive
+  test_audio/           # user-provided audio files for single tests; not included in this archive
+  normalised_audio/     # auto-generated during pipeline execution; not included in this archive
+results/                # auto-generated during pipeline execution; not included in this archive
+  <file_stem>/
+    transcript.txt              # canonical faster-whisper transcript
+    whisper_segments.json       # segment-level ASR output
+    whisper_words.json          # word-level ASR output (with timestamps)
+    diarization_ref.txt         # manual reference annotations (user-created; see below)
+    LLM_diarized_<config>.txt   # LLM attribution outputs (one per config)
+    Pyannote_diarized_<config>.txt  # Pyannote attribution outputs
+    meta.json                   # runtime metadata per pipeline
+  batch_summary.json    # aggregated metadata across all files (overwritten on re-run)
+01_pipeline.ipynb            # main pipeline notebook
+02_evaluation.ipynb          # evaluation, metrics, and figures
+requirements.txt
+constraints_linux_gpu.txt    # pinned dependencies for Linux with CUDA
+constraints_linux_cpu.txt    # pinned dependencies for Linux CPU-only
+constraints_windows_cpu.txt  # pinned dependencies for Windows CPU-only
+```
 
-### ffmpeg installieren (Beispiele)
-- Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y ffmpeg`
-- macOS (brew): `brew install ffmpeg`
-- Windows `Download ffmepg-7.1.1-full-build-shared from https://www.gyan.dev/ffmpeg/builds/#release-builds`
 ---
 
-## Setup (Quickstart)
+## Prerequisites
 
-1) Virtuelle Umgebung + Dependencies
+- **Python 3.12**
+- **CUDA-capable GPU** recommended (≥24 GB VRAM for MedGemma-27B; paper experiments ran on NVIDIA RTX PRO 6000 Blackwell with 96 GB VRAM). CPU-only execution is possible but substantially slower.
+- **ffmpeg** for audio normalization:
+  - Ubuntu/Debian: `sudo apt-get install -y ffmpeg`
+  - macOS: `brew install ffmpeg`
+  - Windows: download from https://www.gyan.dev/ffmpeg/builds/#release-builds
+- **Hugging Face token** with access to Pyannote models (accept model terms at https://huggingface.co/pyannote/speaker-diarization-community-1)
+- A running **vLLM server** for LLM-based pipelines (Pipeline A)
 
-Constraints-Datei je nach Setup wählen (Windows CPU, Linux CPU, Linux CUDA)
+---
+
+## Setup
+
+### 1. Virtual environment and dependencies
+
+Choose the constraints file matching your setup:
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate
-pip install -c constraints_linux.txt -r requirements.txt
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+
+# Linux with GPU (recommended):
+pip install -c constraints_linux_gpu.txt -r requirements.txt
+
+# Linux CPU-only:
+pip install -c constraints_linux_cpu.txt -r requirements.txt
+
+# Windows CPU-only:
+pip install -c constraints_windows_cpu.txt -r requirements.txt
 ```
 
-2) Ordner anlegen
+### 2. Create required directories
 
 ```bash
-mkdir -p data/input_audio data/test_audio data/normalised_audio results src
+mkdir -p data/input_audio data/test_audio data/normalised_audio results
 ```
 
-3) `.env` erstellen
+### 3. Create `.env` file
 
 ```bash
 touch .env
@@ -98,89 +138,138 @@ touch .env
 
 ---
 
-## .env Konfiguration
-
-Notwendige Variablen mit Beispielen (bitte die individuelle Konfiguration anpassen):
+## Environment Configuration (`.env`)
 
 ```bash
 # vLLM / LLM
 VLLM_BASE_URL=http://127.0.0.1:8001/v1
-VLLM_MODEL=google/medgemma-27b-it
+VLLM_MODEL=google/medgemma-27b-it   # or meta-llama/Llama-3.1-8B-Instruct
 
-# Repo
+# Repository
 REPO_ROOT=~/jupyter/diarization-benchmark
-TEST_AUDIO=data/test_audio/test2.mp3
+TEST_AUDIO=data/test_audio/test.wav
 
 # Pyannote
-PYANNOTE_MODEL_ID=pyannote/speaker-diarization-3.1
+PYANNOTE_MODEL_ID=pyannote/speaker-diarization-community-1
 HUGGINGFACE_TOKEN=hf_xxx
 ```
 
-**Wichtige Hinweise**
-- `VLLM_BASE_URL` sollte **inkl. `/v1`** gesetzt werden
-- `TEST_AUDIO` ist **relativ zu `REPO_ROOT`** (wie oben) oder ein absoluter Pfad
-- `.env` bitte **nicht committen** aufgrund sensibler Daten (HF-Token), s. .gitignore
+**Notes:**
+- `VLLM_BASE_URL` must include `/v1`
+- `TEST_AUDIO` can be relative to `REPO_ROOT` or an absolute path
+- Do **not** commit `.env` — it contains your Hugging Face token (see `.gitignore`)
 
 ---
 
-## Nutzung
+## Software Versions (as used in the paper)
 
-### Einzeltests
-
-Im Notebook gibt es Schalter wie `llm_test` / `pyannote_test`, die Test-Zellen bei Bedarf aktivieren.
-Per Default auf False lassen, damit Run All nicht unnötig lange dauert.
-
-### Batch-Run
-
-1) Audios nach `data/input_audio/` legen  
-2) Batch-Zellen im Notebook ausführen  
-3) Für jede Datei entsteht ein Ordner unter `results/<filename_stem>/` mit:
-
-- `transcript.txt` – Transkript (Whisper)
-- `llm_diarized.txt` – LLM-Ausgabe (Dialog)
-- `pyannote_diarized.txt` – Pyannote-Ausgabe (Dialog, via Mapping)
-- `meta.json` – Meta (Model-IDs, Status, Laufzeiten)
-- `whisper_segments.json`, `whisper_info.json` für Debugging-Infos oder Details zur Transkription
-
-Zusätzlich schreibt der Batch-Run sämtliche Meta-Informationen zu Auswertungszwecken in:
-- `results/batch_summary.json` (**wird bei erneutem Run überschrieben**)
+| Component | Version |
+|-----------|---------|
+| Python | 3.12 |
+| faster-whisper | 1.2.1 (large-v3) |
+| pyannote.audio | 4.0.4 (community-1, exclusive mode) |
+| WhisperX | 3.8.2 |
+| vLLM | v.0.18.0 |
+| PyTorch | 2.8.0+cu128 |
 
 ---
 
-## Output / Laufzeitmessung
+## Usage
 
-In `meta.json` wird pro Datei u.a. gespeichert:
+### Single-file tests
 
-- Modell-IDs (Whisper / LLM / Pyannote)
-- Status pro Pipeline (ok/error + Fehlermeldung)
-- Laufzeiten (Sekunden):
-  - `normalize` (Audio → WAV 16k mono)
-  - `transcribe` (faster-whisper)
-  - `llm` (LLM-Diarisierung)
-  - `pyannote` (Pyannote Inferenz)
-  - `postproc` (Mapping/Formatierung)
-  - `total` (gesamt)
+`01_pipeline.ipynb` contains test switches for individual components. Set the corresponding flag to `True` to run a test on `TEST_AUDIO`:
 
-Damit lassen sich Laufzeitvergleiche und Fail-Analysen reproduzierbar auswerten.
+| Switch | Tests |
+|--------|-------|
+| `conversion_test` | Audio normalization |
+| `whisper_test` | faster-whisper transcription |
+| `llm_test` | vLLM connectivity |
+| `pyannote_segment_test` | Segment-level Pyannote mapping |
+| `pyannote_word_test` | Word-level Viterbi mapping |
+
+Leave all switches at `False` for batch runs.
+
+### Batch run
+
+1. Place audio files in `data/input_audio/`
+2. Name files using the pattern `<name>_<N>S.<ext>` where `N` is the number of speakers (e.g. `Konsil_2S.wav`, `Meeting_4S.mp3`). This is necessary to enable known speaker conditions.
+3. Run all cells in `01_pipeline.ipynb`
+
+For each file, a folder `results/<file_stem>/` is created with all pipeline outputs and a `meta.json`. An aggregated `results/batch_summary.json` is written after the full run (overwritten on re-run).
+
+### Running additional LLM configurations
+
+Cell 32 in `01_pipeline.ipynb` allows running additional LLM models or prompt configurations over existing transcripts without re-running Pyannote or faster-whisper.
 
 ---
 
-## Methodische Hinweise und Limitationen
+## Evaluation
 
-### Segment-basiertes Pyannote→Whisper Mapping (Post-Processing)
-Das Mapping ordnet **Whisper-Segmente** per maximalem Zeit-Overlap einem Speaker zu.  
-Das ist transparent und reproduzierbar, kann aber in diesen Situationen ungenau sein:
+`02_evaluation.ipynb` computes all metrics and reproduces the figures from the paper.
 
-- Whisper-Segmente sind **lang** und Sprecherwechsel passieren **innerhalb** eines Segments  
-- sehr kurze Einwürfe („ja“, „mh“) innerhalb längerer Segmente  
-- sehr ähnliche Stimmen / geringe akustische Trennbarkeit
+**Important:** This notebook expects generated outputs under `results/<file_stem>/`, including transcripts, system outputs, metadata, and reference annotations. These artifacts are not part of this archive and must be created locally by running `01_pipeline.ipynb` first.
 
-Für mehr Präzision lässt sich word-basiertes Mapping verwenden, was allerdings aufwändigeres Post-Processing und Änderungen bei der Transkription mit sich zieht.
+### Reference annotations
 
-### Dateinamen-Kollisionen
-Wenn mehrere Audios den gleichen **Dateinamen ohne Endung** haben (z.B. `session1.mp3` in zwei Unterordnern), werden Ergebnisse überschrieben, da `results/<stem>/` genutzt wird.
+For quantitative evaluation (WSER), manual reference speaker labels must be created in `diarization_ref.txt` within each `results/<file_stem>/` folder, directly on the canonical faster-whisper transcript, using the format:
 
-Empfehlung: Test-Dateien eindeutig benennen.
+```
+[Sprecher 1]: text
+[Sprecher 2]: text
+```
 
-### Pyannote
-Pyannote läuft per Default auf der CPU. GPU-Integration ist möglich und kann die Laufzeit deutlich beschleunigen.
+The token stream should not be manually corrected: substitutions remain as-is, insertions are attributed to the active speaker, and deletions are not reintroduced. This ensures strict comparability across pipelines.
+
+### Metrics
+
+| Metric | Description |
+|--------|-------------|
+| WSER (primary) | Word Speaker Error Rate: proportion of words assigned to the wrong speaker, after optimal permutation matching of predicted and reference labels |
+| Validity Rate (VR) | Proportion of LLM outputs that preserved the transcript exactly |
+| Real-Time Factor (RTF) | Processing time relative to audio duration |
+| Speaker Count Accuracy (SCA) | Proportion of files where predicted speaker count matched reference |
+
+---
+
+## Output and Runtime Metadata
+
+`meta.json` stores per file:
+
+- Model IDs (faster-whisper, LLM, Pyannote)
+- Pipeline status (ok/error + message)
+- Audio duration (`audio_duration_s`)
+- Runtimes in seconds: `normalize`, `transcribe`, `llm`, `pyannote`, `postproc`, `total`
+
+---
+
+## Methodological Notes and Limitations
+
+### Segment-level mapping (Pipeline B)
+Whisper segments are assigned to the speaker with maximum temporal overlap with Pyannote turns. Fast and transparent, but can be inaccurate when speaker changes occur within a long segment or for very short interjections.
+
+### Word-level Viterbi mapping (Pipeline C/D)
+More fine-grained than segment mapping. Viterbi smoothing prevents single misattributed words from creating spurious speaker switches. Generally expected to help more when overlapping speech and interruptions are frequent.
+
+### WhisperX alignment (Pipeline D)
+Replaces native faster-whisper word timestamps with forced alignment via WhisperX/wav2vec 2.0. In the paper benchmark, this yielded no measurable WSER improvement over Pipeline C.
+
+### Context length
+LLM attribution is limited by model context windows, which may restrict applicability to longer recordings.
+
+### Filename collisions
+If multiple audio files share the same stem, results will be overwritten since outputs are stored under `results/<stem>/`. Use unique filenames.
+
+---
+
+## Data Availability
+
+Audio data and generated results are not part of this archive:
+
+- Ärztesprech dialogues: https://www.aerztesprech.de (used with written consent)
+- DGD corpus: https://www.dgd.ids-mannheim.de (used under IDS terms for non-commercial research), FOLK
+- Simulated audio: available on request from the authors
+
+## Citation
+
+If you use this code, please cite the accompanying GMDS 2026 paper and the Zenodo archive once the DOI is available.

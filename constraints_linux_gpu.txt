@@ -1,5 +1,6 @@
 torch==2.8.0+cu128
 torchaudio==2.8.0+cu128
-torchcodec==0.7.0+cu128
+torchcodec==0.7.0+
+nvidia-npp-cu12==12.4.1.87
 numpy
 --extra-index-url https://download.pytorch.org/whl/cu128

@@ -9,3 +9,4 @@ seaborn
 faster-whisper
 pyannote-audio
 whisperx
+nvidia-npp-cu12
