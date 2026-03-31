@@ -272,4 +272,5 @@ Audio data and generated results are not part of this archive:
 
 ## Citation
 
-If you use this code, please cite the accompanying GMDS 2026 paper and the Zenodo archive once the DOI is available.
+If you use this code, please cite the accompanying GMDS 2026 paper and the Zenodo archive:
+[![DOI](https://zenodo.org/badge/1155803186.svg)](https://doi.org/10.5281/zenodo.19342656)
